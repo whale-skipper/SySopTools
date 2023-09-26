@@ -1,0 +1,14 @@
+---
+- hosts: all
+  become: true
+  vars:
+
+  tasks:
+    - name: Get un-mounted disks
+      command: "lsblk | awk '$6 == "disk" {if (d) print "/dev/"d; d=$1} {if ($7) d=""} END {if (d) print "/dev/"d}'"
+      register: disks
+    - name: Create variable block_devices
+      set_fact:
+        block_devices: "{{ disks.stdout_lines }}"
+    - debug:
+       var: block_device

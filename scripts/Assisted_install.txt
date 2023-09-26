@@ -1,0 +1,10 @@
+[Assisted Install]
+License Accepted=1
+Deployment Options=0
+Admin Console User=admin
+Admin Console Password=admin
+Admin Console PIN=1234
+License Certificate Path=
+Filter Databases=1
+Remove Desktop Shortcut=0
+Remove Sample Database=0

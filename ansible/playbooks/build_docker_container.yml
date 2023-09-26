@@ -1,0 +1,62 @@
+---
+- hosts: all
+  become: true
+  vars:
+    #    container_count: 4
+    default_container_name: fms
+    default_container_image: ubuntu:22.04
+    default_container_command: sleep 1d
+    default_container_build_path: /opt/docker_images_tmp
+    default_fms_data_path_host: /opt/fms_data
+    default_fms_data_path_container: "/opt/FileMaker/FileMaker Server/Data"
+
+  gather_facts: no
+
+  tasks:
+        
+    - name: copying local Dockerfile to server
+      copy:
+        src: ./Dockerfile
+        dest: "{{default_container_build_path}}/Dockerfile"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Building Docker image with FMS prerequisites
+      community.docker.docker_image:
+        build:
+          path: "{{default_container_build_path}}"
+        name: "{{default_container_name}}"
+        tag: v1
+        push: false
+        source: build
+ 
+        
+    - name: create FMS data dir {{default_fms_data_path_host}}
+      file:
+        path: "{{default_fms_data_path_host}}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+        
+    - name: Starting FMS container
+      community.docker.docker_container:
+        name: "{{default_container_name}}"
+        image: "{{default_container_name}}:v1"
+        state: started
+        detach: true
+        ports:
+        - "80:80"
+        - "443:443"
+        - "2399:2399"
+        - "5003:5003"
+        volumes:
+         - "{{ default_fms_data_path_host }}:{{ default_fms_data_path_container }}"
+ 
+    - name: Running ls
+      community.docker.docker_container_exec:
+          container: "{{default_container_name}}:"
+          command: /bin/bash -c "ls -lah"
+          chdir: /root
+      register: result

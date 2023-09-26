@@ -1,0 +1,25 @@
+---
+- hosts: all
+  become: true
+  vars:
+    required_users: ["mcan", "david", "mikael", "styrbjorn"]
+    newpassword: "changemee2023"
+
+  tasks:
+
+  - name: Add required users
+    user:
+      name: "{{ item }}"
+      shell: /bin/bash
+      groups: "www-data, sudo"
+      state: present
+      update_password: always
+      password: "{{ newpassword|password_hash('sha512') }}"
+    with_items: "{{ required_users }}"
+
+  - name: Add SSH public keys
+    authorized_key:
+      user: "{{ item }}"
+      state: present
+      key: "{{ lookup('file', 'keys/{{ item }}.pub') }}"
+    with_items: "{{ required_users }}"

@@ -1,0 +1,65 @@
+---
+- hosts: all
+  become: true
+  vars:
+    fms_url: "https://downloads.claris.com/TBUB/20/fms_20.1.2.207_Ubuntu22_amd64.zip"
+
+  tasks:
+
+    - name: Installing Unzip
+      ansible.builtin.apt:
+            name: unzip
+            state: present
+        
+    - name: Downloading and unziping FMS 
+      unarchive:
+        src: "{{ fms_url }}"
+        dest: /tmp
+        remote_src: True
+
+    - name: copying local Assitsed install to server
+      copy:
+        src: "../files/Assisted_install.txt"
+        dest: "/tmp/Assisted_install.txt"
+        owner: root
+        group: root
+        mode: "0644"
+    
+#    - name: copying local FMS install to server
+#      copy:
+#        src: "../files/fms_20.1.2.207_Ubuntu22_amd64.zip"
+#        dest: "/tmp/fms_20.1.2.207_Ubuntu22_amd64.zip"
+#        owner: root
+#        group: root
+#        mode: "0644"
+
+#    - name: unzip FMS
+#      unarchive:
+#        src: "/tmp/fms_20.1.2.207_Ubuntu22_amd64.zip"
+#        dest: /tmp
+#        remote_src: False
+
+    - name: Upgrade all apt packages
+      apt: upgrade=dist
+
+    - name: Installing FMS
+      shell: apt-get -y install /tmp/filemaker-server-20.1.2.207-amd64.deb
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+        FM_ASSISTED_INSTALL: "/tmp/Assisted_install.txt"
+
+    - name: restart FMS
+      service:
+         name: fmshelper
+         state: restarted
+         enabled: yes
+
+
+    - name: Get un-mounted disks
+          command: "lsblk | awk '$6 == "disk" {if (d) print "/dev/"d; d=$1} {if ($7) d=""} END {if (d) print "/dev/"d}'"
+          register: disks
+        - name: Create variable block_devices
+          set_fact:
+            block_devices: "{{ disks.stdout_lines }}"
+        - debug:
+            var: block_device
