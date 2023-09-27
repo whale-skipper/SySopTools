@@ -3,9 +3,9 @@
 Blandade verktyg och scripts
 
 ## /ansible
-Här finns div. ansiblescript
+Diverse playbooks och annat för Ansible
 ## /scripts
-Här finns div. shell / powershell -script
+Diverse script för backup och annat, mestadels för bash men även powershell
 
 ## Installera Ansible
  1. Installera brew.  ``` /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" ```
