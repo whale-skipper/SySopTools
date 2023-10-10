@@ -1,0 +1,23 @@
+---
+- hosts: all
+  become: true
+  gather_facts: False
+
+  tasks:
+
+    - name: Get list of pending upgrades
+      command: apt-get --simulate dist-upgrade
+      args:
+        warn: false # don't warn us about apt having its own plugin
+      register: apt_simulate
+      changed_when: 0
+
+    - name: Parse apt-get output to get list of changed packages
+      set_fact:
+        updates: '{{ apt_simulate.stdout_lines | select("match", "^Inst ") | list | sort }}'
+      changed_when: 0
+
+    - name: Show pending updates
+      debug:
+        var: updates
+      when: updates.0 is defined

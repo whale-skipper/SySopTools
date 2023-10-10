@@ -1,0 +1,13 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Change user password
+      user:
+        name: admin
+        update_password: always
+        password: "{{ newpassword|password_hash('sha512') }}"
+
+
+# Run using this command
+# ansible-playbook -i inentory change_pass.yml --extra-vars newpassword=12345678

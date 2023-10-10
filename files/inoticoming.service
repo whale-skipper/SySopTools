@@ -1,0 +1,9 @@
+[Unit]
+Description=Daemon for automatically chown fms-data-files
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/inoticoming_fms.sh
+
+[Install]
+WantedBy=multi-user.target

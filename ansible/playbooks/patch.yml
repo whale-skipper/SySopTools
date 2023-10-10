@@ -1,0 +1,47 @@
+---
+- hosts: all
+  become: true
+  become_user: root
+  gather_facts: False
+  strategy: free
+  vars: 
+    do_reboot: False
+    show_info: False
+
+  tasks:
+    - name: Update rep, cache and packages
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 86400 # 1 day
+        autoclean: yes
+
+#    - name: List installed and updated packages (show with -e show_info=True)
+#      shell: grep -E "^$(date +%Y-%m-%d).+ (install|upgrade) " /var/log/dpkg.log |cut -d " " -f 3-5
+#      register: result
+#      when: show_info
+
+#    - name: Show Output (show with -e show_info=True)
+#      debug: msg="{{ result.stdout_lines }}"
+#      when: show_info
+
+    - name: Check if a reboot is needed
+      register: reboot_required_file
+      stat: path=/var/run/reboot-required get_md5=no
+
+    - debug: msg="Reboot needed (executre reboot with -e do_reboot=True)"      
+      when: reboot_required_file.stat.exists    
+  
+ #   - meta: end_play
+ #     when: do_reboot == False
+
+    - name: Reboot if needed
+      reboot:
+        msg: "Reboot initiated by Ansible for kernel updates"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 10
+        test_command: uptime
+      when: (reboot_required_file.stat.exists) and (do_reboot)

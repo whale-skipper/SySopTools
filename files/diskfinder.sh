@@ -1,0 +1,1 @@
+lsblk | awk '$6 == "disk" {if (d) print "/dev/"d; d=$1} {if ($7) d=""} END {if (d) print "/dev/"d}'

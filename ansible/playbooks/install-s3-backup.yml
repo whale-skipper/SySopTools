@@ -1,6 +1,7 @@
 ---
 - hosts: all
   become: true
+  
   vars:
     aws_access_key: "AKIATXKUB4EBE2PRIVO4"
     aws_secret_key: "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"
@@ -9,19 +10,20 @@
 
   tasks:
 
-    - name: unzip
+    - name: Installning unzip
       ansible.builtin.apt:
             name: unzip
             state: present
         
     - name: Download AWS-cli & unzip
       unarchive:
-        src: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        src: "{{ 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' if ansible_architecture == 'x86_64' else 'https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip' }}"
         dest: /tmp
+        list_files: yes
         remote_src: True
+      register: unarchive_result
 
-
-    - name: Install awscli package.
+    - name: Installing awscli package.
       ansible.builtin.shell: "/tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update"
       become_user: "root"
 
@@ -35,22 +37,22 @@
         format: "{{ aws_format }}"
       changed_when: false
       
-    - name: Remove install files
+    - name: Removing temp install files
       ansible.builtin.file:
         path: /tmp/aws
         state: absent
         
     - name: copying local backup-script to server
       copy:
-        src: "/Users/pontus/ansible/files/backup_to_s3.sh"
+        src: "../../files/backup_to_s3.sh"
         dest: "/usr/local/bin/backup_to_s3.sh"
         owner: root
         group: root
         mode: "a+x"
         
-    - name: Setup cron for backup
+    - name: Seting up cron for backup-script
       ansible.builtin.cron:
         name: "Amazon S3 backup twice a day"
         minute: "0"
         hour: "13,1"
-        job: "/usr/local/bin/backup_to_s3.sh"
+        job: "/usr/local/bin/backup_to_s3.sh -d /fms-data/backup/backup/Daily/ -f /fms-data/container/"

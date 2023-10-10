@@ -2,7 +2,8 @@
 - hosts: all
   become: true
   vars:
-    required_users: ["mcan", "david", "mikael", "styrbjorn"]
+    #required_users: ["mcan", "david", "mikael", "styrbjorn"]
+    required_users: ["mcan", "pontus"]
     newpassword: "changemee2023"
 
   tasks:
@@ -11,7 +12,7 @@
     user:
       name: "{{ item }}"
       shell: /bin/bash
-      groups: "www-data, sudo"
+      groups: "sudo"
       state: present
       update_password: always
       password: "{{ newpassword|password_hash('sha512') }}"

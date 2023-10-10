@@ -3,7 +3,7 @@
 $BASE_DIR = "C:\Program Files\FileMaker\FileMaker Server\Data\Backups\Daily"
 $BASE_DIR_FILES = "C:\Program Files\FileMaker\FileMaker Server\Data\Backups\Daily"
 $BUCKET_FOLDER= "Luna"
-$LOG_FILE = "C:\Users\Administrator\Desktop\s3-backup-scripts\backup.log"
+$LOG_FILE = "C:\Users\Administrator\Desktop\s3-backup-files\backup.log"
 
 # and som S3 vars
 $BACKUP_BUCKET = "sqm-backups"
@@ -31,7 +31,7 @@ foreach ($dir in $directoryListing) {
     }
 
 
-$logDir = "C:\Users\Administrator\Desktop\s3-backup-scripts"
+$logDir = "C:\Users\Administrator\Desktop\s3-backup-files"
 $standardOutput = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".log"
 $standardError = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".errors.log"
 

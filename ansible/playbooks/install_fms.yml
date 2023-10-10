@@ -1,49 +1,47 @@
 ---
 - hosts: all
   become: true
+  #strategy: free
   vars:
-    fms_url: "https://downloads.claris.com/TBUB/20/fms_20.1.2.207_Ubuntu22_amd64.zip"
-
+    fms_url: "{{ 'https://downloads.claris.com/esd/fms_20.2.1.19_Ubuntu22_amd64.zip' if ansible_architecture == 'x86_64' else 'https://downloads.claris.com/esd/fms_20.2.1.19_Ubuntu22_arm64.zip' }}"
+    disks: [
+      {'dev': 'sdb', 'disk_path': 'container'}, 
+      {'dev': 'sdc', 'disk_path': 'backup'}, 
+      {'dev': 'sdd', 'disk_path': 'data'}
+      ]
+      
   tasks:
 
     - name: Installing Unzip
       ansible.builtin.apt:
             name: unzip
             state: present
-        
+    
+    - name: Copying local Assitsed install to server
+      copy:
+        src: "../../files/Assisted_install.txt"
+        dest: "/tmp/Assisted_install.txt"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - debug: var=fms_url
+
     - name: Downloading and unziping FMS 
       unarchive:
         src: "{{ fms_url }}"
         dest: /tmp
         remote_src: True
-
-    - name: copying local Assitsed install to server
-      copy:
-        src: "../files/Assisted_install.txt"
-        dest: "/tmp/Assisted_install.txt"
-        owner: root
-        group: root
-        mode: "0644"
+        list_files: yes
+      register: unarchive_result
     
-#    - name: copying local FMS install to server
-#      copy:
-#        src: "../files/fms_20.1.2.207_Ubuntu22_amd64.zip"
-#        dest: "/tmp/fms_20.1.2.207_Ubuntu22_amd64.zip"
-#        owner: root
-#        group: root
-#        mode: "0644"
-
-#    - name: unzip FMS
-#      unarchive:
-#        src: "/tmp/fms_20.1.2.207_Ubuntu22_amd64.zip"
-#        dest: /tmp
-#        remote_src: False
+#    - debug: var=unarchive_result
 
     - name: Upgrade all apt packages
       apt: upgrade=dist
 
     - name: Installing FMS
-      shell: apt-get -y install /tmp/filemaker-server-20.1.2.207-amd64.deb
+      shell: apt-get -y install "/tmp/{{ unarchive_result.files[0] }}"
       environment:
         DEBIAN_FRONTEND: noninteractive
         FM_ASSISTED_INSTALL: "/tmp/Assisted_install.txt"
@@ -54,12 +52,18 @@
          state: restarted
          enabled: yes
 
+    - name: Creating basedir for mounting disks
+      ansible.builtin.file:
+        path: /fms-data
+        state: directory
+        owner: root
+        group: root
 
-    - name: Get un-mounted disks
-          command: "lsblk | awk '$6 == "disk" {if (d) print "/dev/"d; d=$1} {if ($7) d=""} END {if (d) print "/dev/"d}'"
-          register: disks
-        - name: Create variable block_devices
-          set_fact:
-            block_devices: "{{ disks.stdout_lines }}"
-        - debug:
-            var: block_device
+    - name: Creating dirs for mounting disk
+      ansible.builtin.file:
+        path: "/fms-data/{{ item.disk_path }}"
+        state: directory
+        owner: fmserver
+        group: fmsadmin
+      loop: '{{ disks }}'
+    

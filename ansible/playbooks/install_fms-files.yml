@@ -1,0 +1,60 @@
+---
+- hosts: all
+  become: true
+  vars:
+    required_users: ["fms-files"]
+
+  tasks:
+
+  - name: Add sftponly-group
+    ansible.builtin.group:
+      name: sftponly
+      state: present
+
+  - name: Add required users
+    user:
+      name: "{{ item }}"
+      comment: "User for ul/dl FMS files"
+      shell: /usr/sbin/nologin
+      groups: "sftponly fmsadmin"
+      home: /fms-data
+      state: present
+    with_items: "{{ required_users }}"
+
+  - name: Add SSH public keys
+    authorized_key:
+      user: "{{ item }}"
+      state: present
+      key: "{{ lookup('file', 'keys/{{ item }}.pub') }}"
+    with_items: "{{ required_users }}"
+
+  - name: Installing inoticoming
+    ansible.builtin.apt:
+      name: inoticoming
+      state: present
+
+  - name: copying inotify.sh
+    copy:
+      src: "../../files/inoticoming.sh"
+      dest: "/usr/local/bin/inoticoming_fms.sh"
+      owner: root
+      group: root
+      mode: "a+x"
+
+  - name: copying inotify.service
+    copy:
+      src: "../../files/inoticoming.service"
+      dest: "/etc/systemd/system/inoticoming_fms.service"
+      owner: root
+      group: root
+
+  - name: Enable inotify.service service and ensure it is not masked
+    ansible.builtin.systemd:
+      name: inoticoming_fms
+      enabled: true
+      masked: no
+
+  - name: Make sure inotify service is running
+    ansible.builtin.systemd:
+      state: started
+      name: inoticoming_fms

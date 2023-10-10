@@ -1,14 +1,67 @@
 ---
 - hosts: all
   become: true
+  gather_facts: False
   vars:
+    
+   # disks: [
+   #   {'dev': 'nvme1n1', 'disk_path': 'container'}, 
+   #   {'dev': 'nvme2n1', 'disk_path': 'backup'}, 
+   #   {'dev': 'nvme3n1', 'disk_path': 'data'}
+   #   ]
 
+    # Enter dev-mapping manually until diskfinder.sh is solid
+    disks: [
+      {'dev': 'sdb', 'disk_path': 'container'}, 
+      {'dev': 'sdc', 'disk_path': 'backup'}, 
+      {'dev': 'sdd', 'disk_path': 'data'}
+      ]
+    partition_no: '1'
+    partition_prefix: ''
   tasks:
-    - name: Get un-mounted disks
-      command: "lsblk | awk '$6 == "disk" {if (d) print "/dev/"d; d=$1} {if ($7) d=""} END {if (d) print "/dev/"d}'"
-      register: disks
-    - name: Create variable block_devices
-      set_fact:
-        block_devices: "{{ disks.stdout_lines }}"
-    - debug:
-       var: block_device
+
+#    - name: copying diskfinder
+#      copy:
+#        src: "../../files/diskfinder.sh"
+#        dest: "/tmp"
+#        owner: root
+#        group: root
+#        mode: "a+x"
+
+#    - shell: "/tmp/diskfinder.sh"
+#      register: disks
+
+    - name: Create a new ext4 primary partition
+      community.general.parted:
+        device: /dev/"{{ item.dev }}"
+        number: "{{partition_no}}"
+        state: present
+        fs_type: ext4
+      loop: '{{ disks }}'
+
+    - name: Creating a ext4 filesystemS
+      community.general.filesystem:
+        fstype: ext4
+        dev: "/dev/{{ item.dev }}{{partition_prefix}}{{partition_no}}"
+      loop: '{{ disks }}'
+
+    - name: Creating basedir for mounting disks
+      ansible.builtin.file:
+        path: /fms-data
+        state: directory
+        mode: '0755'
+
+    - name: Creating dirs for mounting disk
+      ansible.builtin.file:
+        path: "/fms-data/{{ item.disk_path }}"
+        state: directory
+        mode: '0755'
+      loop: '{{ disks }}'
+    
+    - name: Mounting disks
+      ansible.posix.mount:
+        path: "/fms-data/{{ item.disk_path }}"
+        src: "/dev/{{ item.dev }}{{partition_prefix}}{{partition_no}}"
+        fstype: ext4
+        state: mounted
+      loop: '{{ disks }}'

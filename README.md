@@ -1,10 +1,10 @@
 # SySopTools
 
-Blandade verktyg och scripts
+Blandade verktyg och files
 
 ## /ansible
 Diverse playbooks och annat för Ansible
-## /scripts
+## /files
 Diverse script för backup och annat, mestadels för bash men även powershell
 
 ## Installera Ansible
